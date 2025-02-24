@@ -6,20 +6,20 @@ CREATE TABLE IF NOT EXISTS Users (
     FirstNM VARCHAR(50) NOT NULL,
     LastNM VARCHAR(50) NOT NULL,
     Username VARCHAR(20) NOT NULL,
-    Password VARCHAR(30) NOT NULL,
-    Role VARCHAR(20) NOT NULL,
+    UsrPassword VARCHAR(30) NOT NULL,
+    RoleNM VARCHAR(20) NOT NULL,
     Date_Created DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (UserId)
 );
 
-CREATE TABLE IF NOT EXISTS Address (
+CREATE TABLE IF NOT EXISTS Addresses (
     AddressId INT AUTO_INCREMENT NOT NULL,
     AddressNM VARCHAR(20),
     StreetNMBR VARCHAR(10) NOT NULL,
     PrimaryStreetNM VARCHAR(20) NOT NULL,
     SecondaryStreetNM VARCHAR(20),
     City VARCHAR(20) NOT NULL,
-    State VARCHAR(20) NOT NULL,
+    StateNM VARCHAR(20) NOT NULL,
     Zipcode VARCHAR(10) NOT NULL,
     Date_Created DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     Date_Modified DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS Customer (
     CustomerId INT AUTO_INCREMENT NOT NULL,
     FirstNM VARCHAR(50) NOT NULL,
     LastNM VARCHAR(50),
-    Description VARCHAR(50),
+    ShortDescription VARCHAR(50),
     PrimaryEmail VARCHAR(50),
     SecondaryEmail VARCHAR(50),
     PrimaryPhoneNMBR VARCHAR(20) NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS Customer (
     Date_Modified DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
                     ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (CustomerId),
-    FOREIGN KEY (HomeAddress) REFERENCES Address(AddressId)
+    FOREIGN KEY (HomeAddress) REFERENCES Addresses(AddressId)
                     ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
@@ -57,14 +57,14 @@ CREATE TABLE IF NOT EXISTS Ride (
     PassengerNMBR INT,
     NeedsCarSeat BOOLEAN DEFAULT FALSE NOT NULL,
     DriverId INT,
-    Status VARCHAR(20) NOT NULL,
+    RideStatus VARCHAR(20) NOT NULL,
     Date_Created DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     Date_Modified DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
                     ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (RideId),
-    FOREIGN KEY (OriginAddress) REFERENCES Address(AddressId)
+    FOREIGN KEY (OriginAddress) REFERENCES Addresses(AddressId)
                     ON UPDATE CASCADE ON DELETE RESTRICT,
-    FOREIGN KEY (DestinationAddress) REFERENCES Address(AddressId)
+    FOREIGN KEY (DestinationAddress) REFERENCES Addresses(AddressId)
                     ON UPDATE CASCADE ON DELETE RESTRICT,
     FOREIGN KEY (DriverId) REFERENCES Users(UserId)
                     ON UPDATE CASCADE ON DELETE RESTRICT,

@@ -19,7 +19,7 @@ class User(Base):
     Username = Column(String(20), nullable=False)
     Password = Column(String(30), nullable=False)
     Role = Column(String(20), nullable=False)
-    Date_Created = Column(DateTime, default=datetime.utcnow, nullable=False)
+    Date_Created = Column(DateTime, default=datetime.timezone.utc, nullable=False)
     
     rides = relationship("Ride", back_populates="driver")
 
@@ -33,8 +33,8 @@ class Address(Base):
     City = Column(String(20), nullable=False)
     State = Column(String(20), nullable=False)
     Zipcode = Column(String(10), nullable=False)
-    Date_Created = Column(DateTime, default=datetime.utcnow, nullable=False)
-    Date_Modified = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    Date_Created = Column(DateTime, default=datetime.timezone.utc, nullable=False)
+    Date_Modified = Column(DateTime, default=datetime.timezone.utc, onupdate=datetime.timezone.utc, nullable=False)
 
 class Customer(Base):
     __tablename__ = "Customer"
@@ -47,8 +47,8 @@ class Customer(Base):
     PrimaryPhoneNMBR = Column(String(20), nullable=False)
     SecondaryPhoneNMBR = Column(String(20))
     HomeAddress = Column(Integer, ForeignKey("Address.AddressId"))
-    Date_Created = Column(DateTime, default=datetime.utcnow, nullable=False)
-    Date_Modified = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    Date_Created = Column(DateTime, default=datetime.timezone.utc, nullable=False)
+    Date_Modified = Column(DateTime, default=datetime.timezone.utc, onupdate=datetime.timezone.utc, nullable=False)
 
     address = relationship("Address", backref="customers")
 
@@ -66,8 +66,8 @@ class Rides(Base):
     NeedsCarSeat = Column(Boolean, default=False, nullable=False)
     DriverId = Column(Integer, ForeignKey("Users.UserId"))
     Status = Column(String(20), nullable=False)
-    Date_Created = Column(DateTime, default=datetime.utcnow, nullable=False)
-    Date_Modified = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    Date_Created = Column(DateTime, default=datetime.timezone.utc, nullable=False)
+    Date_Modified = Column(DateTime, default=datetime.timezone.utc, onupdate=datetime.timezone.utc, nullable=False)
     
     customer = relationship("Customer", backref="rides")
     origin_address = relationship("Address", foreign_keys=[OriginAddress], backref="origin_rides")

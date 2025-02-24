@@ -1,0 +1,20 @@
+services:
+  db:
+    image: mysql:9
+    container_name: mysql_db_mrspeed
+    hostname: db
+    env_file:
+      - ./api_files/.env
+    volumes:
+      - './database_files:/docker-entrypoint-initdb.d/:ro'
+    ports:
+      - 3200:3306
+  api:
+    build: .
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: 'mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}'

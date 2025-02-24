@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS Address (
 CREATE TABLE IF NOT EXISTS Customer (
     CustomerId INT AUTO_INCREMENT NOT NULL,
     FirstNM VARCHAR(50) NOT NULL,
-    LastNM VARCHAR(50) NOT NULL,
+    LastNM VARCHAR(50),
+    Description VARCHAR(50),
     PrimaryEmail VARCHAR(50),
     SecondaryEmail VARCHAR(50),
     PrimaryPhoneNMBR VARCHAR(20) NOT NULL,

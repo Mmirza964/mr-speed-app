@@ -4,13 +4,13 @@ services:
     container_name: mysql_db_mrspeed
     hostname: db
     env_file:
-      - ./api_files/.env
+      - .env
     volumes:
       - './database_files:/docker-entrypoint-initdb.d/:ro'
     ports:
       - 3200:3306
   api:
-    build: .
+    build: ./api_files
     command: uvicorn main:app --host 0.0.0.0 --port 8000
     ports:
       - '8000:8000'

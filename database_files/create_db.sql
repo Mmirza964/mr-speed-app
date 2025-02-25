@@ -67,5 +67,5 @@ CREATE TABLE IF NOT EXISTS Ride (
     FOREIGN KEY (DestinationAddress) REFERENCES Addresses(AddressId)
                     ON UPDATE CASCADE ON DELETE RESTRICT,
     FOREIGN KEY (DriverId) REFERENCES Users(UserId)
-                    ON UPDATE CASCADE ON DELETE RESTRICT,
+                    ON UPDATE CASCADE ON DELETE RESTRICT
 );

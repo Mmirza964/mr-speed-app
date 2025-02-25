@@ -9,12 +9,19 @@ services:
       - './database_files:/docker-entrypoint-initdb.d/:ro'
     ports:
       - 3200:3306
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 20s
+      timeout: 30s
+      retries: 10
+
   api:
     build: ./api_files
     command: uvicorn main:app --host 0.0.0.0 --port 8000
     ports:
       - '8000:8000'
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       DATABASE_URL: 'mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}'

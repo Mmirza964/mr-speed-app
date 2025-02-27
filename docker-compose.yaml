@@ -25,3 +25,17 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: 'mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}'
+  
+  frontend:
+    build:
+      context: ./frontend/frontend
+    container_name: frontend_mrspeed
+    ports:
+      - '3000:3000' 
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - api
+    volumes:
+      - ./frontend/frontend:/app 
+      - /app/node_modules  

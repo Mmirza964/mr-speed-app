@@ -8,7 +8,7 @@ services:
     volumes:
       - './database_files:/docker-entrypoint-initdb.d/:ro'
     ports:
-      - 3200:3306
+      - '3200:3306'
     healthcheck:
       test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
       interval: 20s
@@ -25,17 +25,22 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: 'mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}'
-  
+
   frontend:
     build:
-      context: ./frontend/frontend
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: frontend_mrspeed
+    tty: true
+    stdin_open: true
     ports:
-      - '3000:3000' 
+      - '19000:19000'
+      - '19001:19001'
+      - '19002:19002'
     environment:
-      - REACT_APP_API_URL=http://localhost:8000
+      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
     depends_on:
       - api
     volumes:
-      - ./frontend/frontend:/app 
-      - /app/node_modules  
+      - ./frontend:/app
+      - /app/node_modules

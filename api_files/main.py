@@ -1,10 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, DECIMAL, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, Session
+from sqlalchemy.orm import sessionmaker, relationship, Session, joinedload
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from datetime import datetime, timezone
+from schemas import RideSchema, CustomerSchema, AddressSchema, UserSchema
+from typing import List
 
 # Establish connection to db using the url below
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -94,12 +96,12 @@ def get_db():
         db.close()
 
 origins = [
-    "http://localhost:8000",  # API running in Docker
-    "http://127.0.0.1:8000",  # Localhost
-    "http://10.0.2.2:8000",  # Android Emulator accessing API
-    "exp://127.0.0.1:19000",  # Expo Go (local)
-    "exp://10.0.2.2:19000",  # Expo Go (Android Emulator)
-    "*",  # Allow all origins for debugging
+    "http://localhost:8000", 
+    "http://127.0.0.1:8000", 
+    "http://10.0.2.2:8000", 
+    "exp://127.0.0.1:19000", 
+    "exp://10.0.2.2:19000", 
+    "*", 
 ]
 
 app.add_middleware(
@@ -113,3 +115,13 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {"message": "FastAPI is running!"}
+
+@app.get("/rides", response_model=List[RideSchema])
+def get_all_rides(db: Session = Depends(get_db)):
+    rides = db.query(Ride)\
+            .options(
+                  joinedload(Ride.customer),
+                  joinedload(Ride.origin_address),
+                  joinedload(Ride.destination_address)
+              ).all()
+    return rides

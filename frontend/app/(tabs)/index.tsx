@@ -1,74 +1,128 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+// ngrok URL for API to run Expo Go on iOS device
+const API_URL = 'https://happy-sweet-reindeer.ngrok-free.app';
 
 export default function HomeScreen() {
+  const [all_rides, setAllRides] = useState<any[]>([]);
+
+  // Format the datetime object into "month-date at hour:minute am/pm"
+  const formatPickupTime = (time: any) => {
+    const datetime = new Date(time);
+
+    const month = String(datetime.getMonth() + 1).padStart(2, '0');
+    const day = String(datetime.getDate()).padStart(2, '0');
+
+    let hour = datetime.getHours();
+    const minute = String(datetime.getMinutes()).padStart(2, '0');
+
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12 || 12;
+
+    return `${month}-${day} at ${hour}:${minute} ${ampm}`;
+  };
+
+  // Format the origin address and destination address
+  const formatAddresses = (ride: any) => {
+    let origin =
+      ride.origin_address.AddressNM === 'Logan'
+        ? ride.origin_address.AddressNM
+        : ride.origin_address.City;
+    let dest =
+      ride.destination_address.AddressNM === 'Logan'
+        ? ride.destination_address.AddressNM
+        : ride.destination_address.City;
+
+    return `${origin} to ${dest}`;
+  };
+
+  // Card to display quick ride information
+  const RideCard = ({ ride, onPress }: { ride: any; onPress: () => void }) => (
+    <TouchableOpacity onPress={onPress} style={styles.card}>
+      <Text style={[styles.dateText, styles.cardText]}>
+        {formatPickupTime(ride.PickUpTime)}
+      </Text>
+      <Text style={styles.cardText}>
+        {ride.customer.FirstNM} {ride.customer.LastNM}
+      </Text>
+      <Text style={styles.cardText}>{formatAddresses(ride)}</Text>
+      <Text style={styles.cardText}>{ride.RideStatus}</Text>
+    </TouchableOpacity>
+  );
+
+  useEffect(() => {
+    fetch(`${API_URL}/rides`)
+      .then((res) => res.json())
+      .then((data) => {
+        setAllRides(data);
+      })
+      .catch((err) => console.error('Could not pull rides: ', err));
+  }, []);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.homepageTitle}>Today's Rides</Text>
+      <View style={styles.cardsContainer}>
+        {all_rides.map((ride) => (
+          <View key={ride.RideId} style={styles.cardWrapper}>
+            <RideCard
+              ride={ride}
+              onPress={() => {
+                console.log('Clicked ride', ride.RideId);
+              }}
+            />
+          </View>
+        ))}
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    padding: 15,
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: '#fff',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  homepageTitle: {
+    fontWeight: 'bold',
+    fontSize: 30,
+    color: '#333',
+    marginBottom: 15,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  cardsContainer: {
+    width: '100%',
+  },
+  cardWrapper: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  card: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f2f4f7',
+    borderRadius: 12,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  dateText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  cardText: {
+    marginVertical: 4,
+    fontSize: 15,
   },
 });

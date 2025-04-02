@@ -3,10 +3,12 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, Session, joinedload
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.sql import func
+from fastapi import Query
 import os
 from datetime import datetime, timezone
 from schemas import RideSchema, CustomerSchema, AddressSchema, UserSchema
-from typing import List
+from typing import List, Optional
 
 # Establish connection to db using the url below
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -117,11 +119,21 @@ def read_root():
     return {"message": "FastAPI is running!"}
 
 @app.get("/rides", response_model=List[RideSchema])
-def get_all_rides(db: Session = Depends(get_db)):
-    rides = db.query(Ride)\
-            .options(
-                  joinedload(Ride.customer),
-                  joinedload(Ride.origin_address),
-                  joinedload(Ride.destination_address)
-              ).all()
-    return rides
+def get_all_rides(date: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    query = db.query(Ride)\
+        .options(
+            joinedload(Ride.customer),
+            joinedload(Ride.origin_address),
+            joinedload(Ride.destination_address),
+            joinedload(Ride.driver),
+        )
+
+    if date:
+        try:
+            date_obj = datetime.strptime(date, "%m-%d-%Y").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Date must be in format MM-DD-YYYY")
+
+        query = query.filter(func.date(Ride.PickUpTime) == date_obj)
+
+    return query.all()

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar } from 'react-native-calendars';
 import { BlurView } from 'expo-blur';
+import Modal from 'react-native-modal';
 import {
   View,
   Text,
@@ -8,10 +9,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
-  Easing
+  Easing,
+  Dimensions
 } from 'react-native';
 
-// ngrok URL for API to run Expo Go on iOS device
 const API_URL = 'https://happy-sweet-reindeer.ngrok-free.app';
 
 export default function HomeScreen() {
@@ -19,6 +20,8 @@ export default function HomeScreen() {
   const [selected_date, setNewDate] = useState(new Date());
   const [showCalender, setCalender] = useState(false);
   const [calendarAnim] = useState(new Animated.Value(0));
+  const [selectedRide, setSelectedRide] = useState<any>(null);
+  const [isModalVisible, setModalVisible] = useState(false);
 
   const openCalendar = () => {
     setCalender(true);
@@ -47,7 +50,6 @@ export default function HomeScreen() {
     return `${month}-${day}-${year}`;
   };
 
-  // Fetch rides from the API for a specific date
   const getRides = (dateObj: Date) => {
     const date = foramtDate(dateObj);
     fetch(`${API_URL}/rides?date=${date}`)
@@ -58,7 +60,6 @@ export default function HomeScreen() {
       .catch((err) => console.error('Could not pull rides: ', err));
   };
 
-  // Load rides on first render
   useEffect(() => {
     getRides(selected_date);
   }, []);
@@ -74,27 +75,29 @@ export default function HomeScreen() {
     return `${month}-${day} at ${hour}:${minute} ${ampm}`;
   };
 
-  const formatAddresses = (ride: any) => {
-    let origin =
-      ride.origin_address.AddressNM === 'Logan'
-        ? ride.origin_address.AddressNM
-        : ride.origin_address.City;
-    let dest =
-      ride.destination_address.AddressNM === 'Logan'
-        ? ride.destination_address.AddressNM
-        : ride.destination_address.City;
-    return `${origin} to ${dest}`;
+  const getOrNA = (value: any) => {
+    return value ? value : 'Not available';
   };
 
-  const RideCard = ({ ride, onPress }: { ride: any; onPress: () => void }) => (
-    <TouchableOpacity onPress={onPress} style={styles.card}>
+  const formatFullAddress = (address: any) => {
+    return `${getOrNA(address.StreetNMBR)} ${getOrNA(address.PrimaryStreetNM)}${address.SecondaryStreetNM ? ' ' + address.SecondaryStreetNM : ''}, ${getOrNA(address.City)}, ${getOrNA(address.StateNM)} ${getOrNA(address.Zipcode)}`;
+  };
+
+  const RideCard = ({ ride }: { ride: any }) => (
+    <TouchableOpacity
+      onPress={() => {
+        setSelectedRide(ride);
+        setModalVisible(true);
+      }}
+      style={styles.card}
+    >
       <Text style={[styles.dateText, styles.cardText]}>
         {formatPickupTime(ride.PickUpTime)}
       </Text>
       <Text style={styles.cardText}>
         {ride.customer.FirstNM} {ride.customer.LastNM}
       </Text>
-      <Text style={styles.cardText}>{formatAddresses(ride)}</Text>
+      <Text style={styles.cardText}>{ride.origin_address.City} to {ride.destination_address.City}</Text>
       <Text style={styles.cardText}>{ride.RideStatus}</Text>
     </TouchableOpacity>
   );
@@ -167,16 +170,54 @@ export default function HomeScreen() {
         ) : (
           all_rides.map((ride) => (
             <View key={ride.RideId} style={styles.cardWrapper}>
-              <RideCard
-                ride={ride}
-                onPress={() => {
-                  console.log('Clicked ride', ride.RideId);
-                }}
-              />
+              <RideCard ride={ride} />
             </View>
           ))
         )}
       </View>
+
+      {isModalVisible && (
+        <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+      )}
+
+      <Modal
+        isVisible={isModalVisible}
+        onBackdropPress={() => setModalVisible(false)}
+        onSwipeComplete={() => setModalVisible(false)}
+        swipeDirection={["down"]}
+        animationIn="slideInUp"
+        animationOut="slideOutDown"
+        animationInTiming={600}
+        animationOutTiming={500}
+        backdropTransitionInTiming={600}
+        backdropTransitionOutTiming={500}
+        style={{ margin: 0, justifyContent: 'flex-end' }}
+      >
+        <View style={styles.modalContent}>
+          {selectedRide && (
+            <ScrollView>
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Customer:</Text> {getOrNA(selectedRide.customer.FirstNM)} {getOrNA(selectedRide.customer.LastNM)}</Text>
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Primary Phone:</Text> {getOrNA(selectedRide.customer.PrimaryPhoneNMBR)}</Text>
+              {selectedRide.customer.SecondaryPhoneNMBR && <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Secondary Phone:</Text> {selectedRide.customer.SecondaryPhoneNMBR}</Text>}
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Primary Email:</Text> {getOrNA(selectedRide.customer.PrimaryEmail)}</Text>
+              {selectedRide.customer.SecondaryEmail && <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Secondary Email:</Text> {selectedRide.customer.SecondaryEmail}</Text>}
+
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Origin:</Text> {formatFullAddress(selectedRide.origin_address)}</Text>
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Destination:</Text> {formatFullAddress(selectedRide.destination_address)}</Text>
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Pickup Time:</Text> {formatPickupTime(selectedRide.PickUpTime)}</Text>
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Miles:</Text> {getOrNA(selectedRide.Miles)}</Text>
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Estimated Time:</Text> {getOrNA(selectedRide.EstRideTime)}</Text>
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Passengers:</Text> {getOrNA(selectedRide.PassengerNMBR)}</Text>
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Needs Car Seat:</Text> {selectedRide.NeedsCarSeat ? 'Yes' : 'No'}</Text>
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Price:</Text> ${getOrNA(selectedRide.Price)}</Text>
+              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Status:</Text> {getOrNA(selectedRide.RideStatus)}</Text>
+              <TouchableOpacity style={[styles.card, { marginTop: 20 }]}> 
+                <Text style={{ fontWeight: 'bold' }}>Assign Driver</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -237,6 +278,7 @@ const styles = StyleSheet.create({
   cardText: {
     marginVertical: 4,
     fontSize: 15,
+    color: '#333',
   },
   overlay: {
     position: 'absolute',
@@ -276,11 +318,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 100,
   },
-  
   placeholderText: {
     fontSize: 18,
     color: '#888',
     textAlign: 'center',
     paddingHorizontal: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '85%',
   },
 });

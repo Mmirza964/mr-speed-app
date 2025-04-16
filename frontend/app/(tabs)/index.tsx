@@ -10,12 +10,12 @@ import {
   TouchableOpacity,
   Animated,
   Easing,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 
 const API_URL = 'https://happy-sweet-reindeer.ngrok-free.app';
 
-export default function HomeScreen() {
+export default function Homescreen() {
   const [all_rides, setAllRides] = useState<any[]>([]);
   const [selected_date, setNewDate] = useState(new Date());
   const [showCalender, setCalender] = useState(false);
@@ -80,7 +80,11 @@ export default function HomeScreen() {
   };
 
   const formatFullAddress = (address: any) => {
-    return `${getOrNA(address.StreetNMBR)} ${getOrNA(address.PrimaryStreetNM)}${address.SecondaryStreetNM ? ' ' + address.SecondaryStreetNM : ''}, ${getOrNA(address.City)}, ${getOrNA(address.StateNM)} ${getOrNA(address.Zipcode)}`;
+    return `${getOrNA(address.StreetNMBR)} ${getOrNA(address.PrimaryStreetNM)}${
+      address.SecondaryStreetNM ? ' ' + address.SecondaryStreetNM : ''
+    }, ${getOrNA(address.City)}, ${getOrNA(address.StateNM)} ${getOrNA(
+      address.Zipcode
+    )}`;
   };
 
   const RideCard = ({ ride }: { ride: any }) => (
@@ -97,7 +101,9 @@ export default function HomeScreen() {
       <Text style={styles.cardText}>
         {ride.customer.FirstNM} {ride.customer.LastNM}
       </Text>
-      <Text style={styles.cardText}>{ride.origin_address.City} to {ride.destination_address.City}</Text>
+      <Text style={styles.cardText}>
+        {ride.origin_address.City} to {ride.destination_address.City}
+      </Text>
       <Text style={styles.cardText}>{ride.RideStatus}</Text>
     </TouchableOpacity>
   );
@@ -129,7 +135,11 @@ export default function HomeScreen() {
 
       {showCalender && (
         <View style={styles.overlay}>
-          <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView
+            intensity={50}
+            tint="dark"
+            style={StyleSheet.absoluteFill}
+          />
           <Animated.View
             style={[
               styles.overlayContent,
@@ -146,12 +156,17 @@ export default function HomeScreen() {
               },
             ]}
           >
-            <TouchableOpacity style={styles.closeButton} onPress={closeCalendar}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={closeCalendar}
+            >
               <Text style={styles.closeButtonText}>X</Text>
             </TouchableOpacity>
             <Calendar
               onDayPress={(day: any) => {
-                const [year, month, dayNum] = day.dateString.split('-').map(Number);
+                const [year, month, dayNum] = day.dateString
+                  .split('-')
+                  .map(Number);
                 const newDate = new Date(year, month - 1, dayNum);
                 setNewDate(newDate);
                 getRides(newDate);
@@ -165,7 +180,9 @@ export default function HomeScreen() {
       <View style={styles.cardsContainer}>
         {all_rides.length === 0 ? (
           <View style={styles.placeholderContainer}>
-            <Text style={styles.placeholderText}>No rides scheduled for this day.</Text>
+            <Text style={styles.placeholderText}>
+              No rides scheduled for this day.
+            </Text>
           </View>
         ) : (
           all_rides.map((ride) => (
@@ -184,7 +201,7 @@ export default function HomeScreen() {
         isVisible={isModalVisible}
         onBackdropPress={() => setModalVisible(false)}
         onSwipeComplete={() => setModalVisible(false)}
-        swipeDirection={["down"]}
+        swipeDirection={['down']}
         animationIn="slideInUp"
         animationOut="slideOutDown"
         animationInTiming={600}
@@ -196,22 +213,69 @@ export default function HomeScreen() {
         <View style={styles.modalContent}>
           {selectedRide && (
             <ScrollView>
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Customer:</Text> {getOrNA(selectedRide.customer.FirstNM)} {getOrNA(selectedRide.customer.LastNM)}</Text>
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Primary Phone:</Text> {getOrNA(selectedRide.customer.PrimaryPhoneNMBR)}</Text>
-              {selectedRide.customer.SecondaryPhoneNMBR && <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Secondary Phone:</Text> {selectedRide.customer.SecondaryPhoneNMBR}</Text>}
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Primary Email:</Text> {getOrNA(selectedRide.customer.PrimaryEmail)}</Text>
-              {selectedRide.customer.SecondaryEmail && <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Secondary Email:</Text> {selectedRide.customer.SecondaryEmail}</Text>}
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Customer:</Text>{' '}
+                {getOrNA(selectedRide.customer.FirstNM)}{' '}
+                {getOrNA(selectedRide.customer.LastNM)}
+              </Text>
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Primary Phone:</Text>{' '}
+                {getOrNA(selectedRide.customer.PrimaryPhoneNMBR)}
+              </Text>
+              {selectedRide.customer.SecondaryPhoneNMBR && (
+                <Text style={styles.cardText}>
+                  <Text style={{ fontWeight: 'bold' }}>Secondary Phone:</Text>{' '}
+                  {selectedRide.customer.SecondaryPhoneNMBR}
+                </Text>
+              )}
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Primary Email:</Text>{' '}
+                {getOrNA(selectedRide.customer.PrimaryEmail)}
+              </Text>
+              {selectedRide.customer.SecondaryEmail && (
+                <Text style={styles.cardText}>
+                  <Text style={{ fontWeight: 'bold' }}>Secondary Email:</Text>{' '}
+                  {selectedRide.customer.SecondaryEmail}
+                </Text>
+              )}
 
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Origin:</Text> {formatFullAddress(selectedRide.origin_address)}</Text>
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Destination:</Text> {formatFullAddress(selectedRide.destination_address)}</Text>
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Pickup Time:</Text> {formatPickupTime(selectedRide.PickUpTime)}</Text>
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Miles:</Text> {getOrNA(selectedRide.Miles)}</Text>
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Estimated Time:</Text> {getOrNA(selectedRide.EstRideTime)}</Text>
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Passengers:</Text> {getOrNA(selectedRide.PassengerNMBR)}</Text>
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Needs Car Seat:</Text> {selectedRide.NeedsCarSeat ? 'Yes' : 'No'}</Text>
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Price:</Text> ${getOrNA(selectedRide.Price)}</Text>
-              <Text style={styles.cardText}><Text style={{ fontWeight: 'bold' }}>Status:</Text> {getOrNA(selectedRide.RideStatus)}</Text>
-              <TouchableOpacity style={[styles.card, { marginTop: 20 }]}> 
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Origin:</Text>{' '}
+                {formatFullAddress(selectedRide.origin_address)}
+              </Text>
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Destination:</Text>{' '}
+                {formatFullAddress(selectedRide.destination_address)}
+              </Text>
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Pickup Time:</Text>{' '}
+                {formatPickupTime(selectedRide.PickUpTime)}
+              </Text>
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Miles:</Text>{' '}
+                {getOrNA(selectedRide.Miles)}
+              </Text>
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Estimated Time:</Text>{' '}
+                {getOrNA(selectedRide.EstRideTime)}
+              </Text>
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Passengers:</Text>{' '}
+                {getOrNA(selectedRide.PassengerNMBR)}
+              </Text>
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Needs Car Seat:</Text>{' '}
+                {selectedRide.NeedsCarSeat ? 'Yes' : 'No'}
+              </Text>
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Price:</Text> $
+                {getOrNA(selectedRide.Price)}
+              </Text>
+              <Text style={styles.cardText}>
+                <Text style={{ fontWeight: 'bold' }}>Status:</Text>{' '}
+                {getOrNA(selectedRide.RideStatus)}
+              </Text>
+              <TouchableOpacity style={[styles.card, { marginTop: 20 }]}>
                 <Text style={{ fontWeight: 'bold' }}>Assign Driver</Text>
               </TouchableOpacity>
             </ScrollView>

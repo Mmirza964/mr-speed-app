@@ -20,6 +20,18 @@ INSERT INTO Customer(FirstNM, LastNM, PrimaryEmail, PrimaryPhoneNMBR, HomeAddres
     'Matthew', 'Mirza', 'mathewfmirza@gmail.com', '5088089172', 2
 );
 
+INSERT INTO Customer(FirstNM, LastNM, PrimaryEmail, PrimaryPhoneNMBR, HomeAddress) VALUES (
+    'Saransh', 'Singh', 'ssingh@gmail.com', '5088089172', 3
+);
+
+INSERT INTO Customer(FirstNM, LastNM, PrimaryEmail, PrimaryPhoneNMBR, HomeAddress) VALUES (
+    'Zach', 'Ganz', 'zganz@gmail.com', '5088089172', 4
+);
+
+INSERT INTO Customer(FirstNM, LastNM, PrimaryEmail, PrimaryPhoneNMBR, HomeAddress) VALUES (
+    'Igor', 'Zaltsman', 'izalts@gmail.com', '5088089172', 2
+);
+
 INSERT INTO Ride(CustomerId, OriginAddress, DestinationAddress, PickUpTime, Miles, EstRideTime, Price, RideStatus) VALUES (
     1, 2, 1, '2025-03-27 07:30:00', 25.00, '1h', 100.00, 'Scheduled'
 );

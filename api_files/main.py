@@ -59,7 +59,7 @@ class Customer(Base):
     Date_Created = Column(DateTime, default=datetime.now, nullable=False)
     Date_Modified = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
-    address = relationship("Addresses", backref="customer")
+    addresses = relationship("Addresses", backref="customer")
 
 class Ride(Base):
     __tablename__ = "Ride"
@@ -118,6 +118,7 @@ app.add_middleware(
 def read_root():
     return {"message": "FastAPI is running!"}
 
+# Get all rides with a pickup time on the date inputted
 @app.get("/rides", response_model=List[RideSchema])
 def get_all_rides(date: Optional[str] = Query(None), db: Session = Depends(get_db)):
     query = db.query(Ride)\
@@ -137,3 +138,22 @@ def get_all_rides(date: Optional[str] = Query(None), db: Session = Depends(get_d
         query = query.filter(func.date(Ride.PickUpTime) == date_obj)
 
     return query.all()
+
+# Get all customers in the db
+@app.get("/customers", response_model=List[CustomerSchema])
+def get_all_customers(db: Session = Depends(get_db)):
+    return db.query(Customer)\
+        .options(joinedload(Customer.addresses))\
+        .all()
+
+# Get all addresses in the db
+@app.get("/addresses", response_model=List[AddressSchema])
+def get_all_addresses(db: Session = Depends(get_db)):
+    return db.query(Addresses)\
+        .options(joinedload(Addresses.customer))\
+        .all()
+
+# Get all users in the db
+@app.get("/users", response_model=List[UserSchema])
+def get_all_users(db: Session = Depends(get_db)):
+    return db.query(Users).all()

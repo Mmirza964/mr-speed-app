@@ -67,3 +67,16 @@ class RideSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+class CustomerWithHomeAddressSchema(BaseModel):
+    CustomerId: int
+    FirstNM: str
+    LastNM: Optional[str]
+    PrimaryPhoneNMBR: str
+    HomeAddress: Optional[int]
+    Date_Created: datetime
+    Date_Modified: datetime
+    home_address: Optional[AddressSchema]
+
+    class Config:
+        orm_mode = True

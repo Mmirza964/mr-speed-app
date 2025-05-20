@@ -7,7 +7,7 @@ from sqlalchemy.sql import func
 from fastapi import Query
 import os
 from datetime import datetime, timezone
-from schemas import RideSchema, CustomerSchema, AddressSchema, UserSchema
+from schemas import RideSchema, CustomerSchema, AddressSchema, UserSchema, CustomerWithHomeAddressSchema
 from typing import List, Optional
 
 # Establish connection to db using the url below
@@ -59,7 +59,7 @@ class Customer(Base):
     Date_Created = Column(DateTime, default=datetime.now, nullable=False)
     Date_Modified = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
-    addresses = relationship("Addresses", backref="customer")
+    home_address = relationship("Addresses", foreign_keys=[HomeAddress], lazy="joined")
 
 class Ride(Base):
     __tablename__ = "Ride"
@@ -114,6 +114,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Health check
 @app.get("/")
 def read_root():
     return {"message": "FastAPI is running!"}
@@ -139,19 +140,15 @@ def get_all_rides(date: Optional[str] = Query(None), db: Session = Depends(get_d
 
     return query.all()
 
-# Get all customers in the db
-@app.get("/customers", response_model=List[CustomerSchema])
+# Get all customers in the db and their home adresses
+@app.get("/customers", response_model=List[CustomerWithHomeAddressSchema])
 def get_all_customers(db: Session = Depends(get_db)):
-    return db.query(Customer)\
-        .options(joinedload(Customer.addresses))\
-        .all()
+    return db.query(Customer).options(joinedload(Customer.home_address)).all()
 
 # Get all addresses in the db
 @app.get("/addresses", response_model=List[AddressSchema])
 def get_all_addresses(db: Session = Depends(get_db)):
-    return db.query(Addresses)\
-        .options(joinedload(Addresses.customer))\
-        .all()
+    return db.query(Addresses).all()
 
 # Get all users in the db
 @app.get("/users", response_model=List[UserSchema])

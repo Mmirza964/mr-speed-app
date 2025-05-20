@@ -1,186 +1,231 @@
-import React, {useEffect, useState} from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView } from 'react-native';
-import { getCustomers } from '../../components/api_calls';
-import { getAddresses } from '../../components/api_calls';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, TextInput, StyleSheet, ScrollView, Pressable, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, findNodeHandle, UIManager } from 'react-native';
+import { getCustomers, getAddresses } from '../../components/api_calls';
+import { Address } from '../../components/types/address';
+
+const formatAddress = (address: Address) => {
+    const { StreetNMBR, PrimaryStreetNM, SecondaryStreetNM, City, StateNM, Zipcode } = address;
+    const secondary = address.SecondaryStreetNM ? ` (${address.SecondaryStreetNM})` : '';
+    return `${StreetNMBR} ${PrimaryStreetNM}${secondary}, ${City}, ${StateNM} ${Zipcode}`;
+};
 
 export default function Schedule() {
-  const [customer, setCustomer] = useState('');
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
-  const [pickuptime, setPickuptime] = useState('');
-  const [miles, setMiles] = useState('0.00');
-  const [rideTime, setRideTime] = useState('');
-  const [price, setPrice] = useState('0.00');
-  const [passengerNMBR, setPassNum] = useState('N/A');
-  const [carSeat, setCarSeat] = useState(false);
-  const [status, setStatus] = useState('Scheduled');
+    const [customer, setCustomer] = useState('');
+    const [origin, setOrigin] = useState('');
+    const [destination, setDestination] = useState('');
+    const [originId, setOriginId] = useState<number | null>(null);
+    const [destinationId, setDestinationId] = useState<number | null>(null);
+    const [pickuptime, setPickuptime] = useState('');
+    const [miles, setMiles] = useState('0.00');
+    const [rideTime, setRideTime] = useState('');
+    const [price, setPrice] = useState('0.00');
+    const [passengerNMBR, setPassNum] = useState('N/A');
+    const [carSeat, setCarSeat] = useState(false);
+    const [status, setStatus] = useState('Scheduled');
+    const [customerOptions, setCustomerOptions] = useState<any[]>([]);
+    const [filteredCustomers, setFilteredCustomers] = useState<any[]>([]);
+    const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [filteredAddresses, setFilteredAddresses] = useState<Address[]>([]);
+    const [showAddressDropdown, setShowAddressDropdown] = useState(false);
+    const [isOriginDropdown, setIsOriginDropdown] = useState(true);
+    const [dropdownTop, setDropdownTop] = useState<number>(0);
+    const [homeAddress, setHomeAddress] = useState<Address | null>(null);
 
-  const [customerData, setCustData] = useState<any[]>([]);
-  const [addressData, setAddressData] = useState<any[]>([]);
-  const [customerOptions, setCustomerOptions] = useState<{id: number, name: string}[]>([]);
+    const customerInputRef = useRef(null);
+    const originInputRef = useRef(null);
+    const destinationInputRef = useRef(null);
+    const scrollRef = useRef<ScrollView>(null);
 
-  const [filteredCustomers, setFilteredCustomers] = useState<{ id: number, name: string }[]>([]);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [custData, allAddresses] = await Promise.all([getCustomers(), getAddresses()]);
 
-  // Pull all customers and addresses from the db on page load
-  useEffect(() => {
-    const fetchCustAddyData = async () => {
-      try {
-        const [custData, addyData] = await Promise.all([
-          getCustomers(),
-          getAddresses(),
-        ]);
-        setCustData(custData);
-        setAddressData(addyData);
+                const customerOptions = custData.map((cust) => ({
+                    id: cust.CustomerId,
+                    name: `${cust.FirstNM} ${cust.LastNM}`,
+                    homeAddress: cust.home_address || null,
+                }));
+                setCustomerOptions(customerOptions);
 
-        const options = custData.map((cust: any) => ({
-          id: cust.CustomerId,
-          name: `${cust.FirstNM} ${cust.LastNM}`,
-        }));
+                const addressList = allAddresses.map((addy) => ({ ...addy, isHome: false }));
+                setAddresses(addressList);
+            } catch (error) {
+                console.error('Error loading customer and address data:', error);
+            }
+        };
 
-        setCustomerOptions(options);
-      } catch (error) {
-        console.error('Error loading customer and address data:', error);
-      }
+        fetchData();
+    }, []);
+
+    useEffect(() => {
+        const selected = customerOptions.find(c => c.id === selectedCustomerId);
+        setHomeAddress(selected?.homeAddress || null);
+    }, [selectedCustomerId, customerOptions]);
+
+    const handleDropdownPosition = (ref: any) => {
+        const inputHandle = findNodeHandle(ref.current);
+        const scrollHandle = findNodeHandle(scrollRef.current);
+
+        if (inputHandle != null && scrollHandle != null) {
+            UIManager.measureLayout(
+                inputHandle,
+                scrollHandle,
+                () => {},
+                (x: number, y: number) => setDropdownTop(y + 40)
+            );
+        }
     };
 
-    fetchCustAddyData();
-  }, []); 
+    return (
+        <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setShowDropdown(false); setShowAddressDropdown(false); }}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                <View style={styles.screenContainer}>
+                    <ScrollView style={styles.container} contentContainerStyle={styles.content} ref={scrollRef}>
+                        <Text style={styles.title}>Schedule</Text>
 
-  return (
-    <ScrollView 
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
-      <Text style={styles.title}>Schedule</Text>
-      <View style={styles.inputRow}>
-        <Text style={styles.inputLabel}>Customer:</Text>
-        <TextInput 
-          style={styles.inputField}
-          value={customer}
-          onChangeText={(text) => {
-            setCustomer(text);
-            const filtered = customerOptions.filter((cust: any) =>
-              cust.name.toLocaleLowerCase().includes(text.toLocaleLowerCase()));
-            setFilteredCustomers(filtered);
-          }}
-          placeholder='Enter customer name...'
-          placeholderTextColor="#888"
-          />
-          {filteredCustomers.map((cust) => (
-            <Text
-              key={cust.id}
-              style={styles.dropdownOption}
-              onPress={() => {
-                setCustomer(cust.name);
-                setSelectedCustomerId(cust.id);
-                setFilteredCustomers([]);
-              }}
-            >
-              {cust.name}
-            </Text>
-          ))}
-      </View>
-      <View style={styles.inputRow}>
-        <Text style={styles.inputLabel}>Origin:</Text>
-        <TextInput 
-          style={styles.inputField}
-          value={origin}
-          onChangeText={setOrigin}
-          placeholder='Enter origin address...'
-          placeholderTextColor="#888"
-          />
-      </View>
-      <View style={styles.inputRow}>
-        <Text style={styles.inputLabel}>Destination:</Text>
-        <TextInput 
-          style={styles.inputField}
-          value={destination}
-          onChangeText={setDestination}
-          placeholder='Enter destination address...'
-          placeholderTextColor="#888"
-          />
-      </View>
-      <View style={styles.inputRow}>
-        <Text style={styles.inputLabel}>Miles:</Text>
-        <TextInput 
-          style={styles.inputField}
-          value={miles}
-          onChangeText={setMiles}
-          placeholder={miles}
-          placeholderTextColor="#888"
-          />
-      </View>
-      <View style={styles.inputRow}>
-        <Text style={styles.inputLabel}>Price:</Text>
-        <TextInput 
-          style={styles.inputField}
-          value={price}
-          onChangeText={setPrice}
-          placeholder={price}
-          placeholderTextColor="#888"
-          />
-      </View>
-      <View style={styles.inputRow}>
-        <Text style={styles.inputLabel}>Status:</Text>
-        <TextInput 
-          style={styles.inputField}
-          value={status}
-          onChangeText={setStatus}
-          placeholder={status}
-          placeholderTextColor="#888"
-          />
-      </View>
-    </ScrollView>
-  );
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Customer:</Text>
+                            <TextInput
+                                ref={customerInputRef}
+                                style={styles.inputField}
+                                value={customer}
+                                onChangeText={(text) => {
+                                    setCustomer(text);
+                                    const filtered = customerOptions.filter((cust) =>
+                                        cust.name.toLowerCase().includes(text.toLowerCase())
+                                    );
+                                    setFilteredCustomers(filtered);
+                                    setShowDropdown(true);
+                                    handleDropdownPosition(customerInputRef);
+                                }}
+                                onFocus={() => {
+                                    setShowAddressDropdown(false);
+                                    handleDropdownPosition(customerInputRef);
+                                }}
+                                placeholder="Enter customer name..."
+                                placeholderTextColor="#888"
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Origin:</Text>
+                            <TextInput
+                                ref={originInputRef}
+                                style={styles.inputField}
+                                value={origin}
+                                onChangeText={(text) => {
+                                    setOrigin(text);
+                                    setIsOriginDropdown(true);
+                                    let filtered = addresses.filter((addy) =>
+                                        formatAddress(addy).toLowerCase().includes(text.toLowerCase())
+                                    );
+                                    if (homeAddress) {
+                                        filtered = [{ ...homeAddress, isHome: true }, ...filtered.filter(a => a.AddressId !== homeAddress.AddressId)];
+                                    }
+                                    setFilteredAddresses(filtered);
+                                    setShowAddressDropdown(true);
+                                    handleDropdownPosition(originInputRef);
+                                }}
+                                onFocus={() => {
+                                    setShowDropdown(false);
+                                    handleDropdownPosition(originInputRef);
+                                }}
+                                placeholder="Enter origin address..."
+                                placeholderTextColor="#888"
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Destination:</Text>
+                            <TextInput
+                                ref={destinationInputRef}
+                                style={styles.inputField}
+                                value={destination}
+                                onChangeText={(text) => {
+                                    setDestination(text);
+                                    setIsOriginDropdown(false);
+                                    let filtered = addresses.filter((addy) =>
+                                        formatAddress(addy).toLowerCase().includes(text.toLowerCase())
+                                    );
+                                    if (homeAddress) {
+                                        filtered = [{ ...homeAddress, isHome: true }, ...filtered.filter(a => a.AddressId !== homeAddress.AddressId)];
+                                    }
+                                    setFilteredAddresses(filtered);
+                                    setShowAddressDropdown(true);
+                                    handleDropdownPosition(destinationInputRef);
+                                }}
+                                onFocus={() => {
+                                    setShowAddressDropdown(true);
+                                    handleDropdownPosition(destinationInputRef);
+                                }}
+                                placeholder="Enter destination address..."
+                                placeholderTextColor="#888"
+                            />
+                        </View>
+                    </ScrollView>
+
+                    {showDropdown && filteredCustomers.length > 0 && (
+                        <View style={[styles.dropdown, { top: dropdownTop }]}>
+                            {filteredCustomers.map((item) => (
+                                <Pressable
+                                    key={item.id}
+                                    style={styles.dropdownOption}
+                                    onPress={() => {
+                                        setCustomer(item.name);
+                                        setSelectedCustomerId(item.id);
+                                        setFilteredCustomers([]);
+                                        setShowDropdown(false);
+                                    }}
+                                >
+                                    <Text style={styles.dropdownText}>{item.name}</Text>
+                                </Pressable>
+                            ))}
+                        </View>
+                    )}
+
+                    {showAddressDropdown && filteredAddresses.length > 0 && (
+                        <View style={[styles.dropdown, { top: dropdownTop }]}>
+                            {filteredAddresses.map((addy) => (
+                                <Pressable
+                                    key={addy.AddressId}
+                                    style={styles.dropdownOption}
+                                    onPress={() => {
+                                        if (isOriginDropdown) {
+                                            setOrigin(formatAddress(addy));
+                                            setOriginId(addy.AddressId);
+                                        } else {
+                                            setDestination(formatAddress(addy));
+                                            setDestinationId(addy.AddressId);
+                                        }
+                                        setFilteredAddresses([]);
+                                        setShowAddressDropdown(false);
+                                    }}
+                                >
+                                    <Text style={[styles.dropdownText, addy.isHome ? styles.homeAddressText : null]}>{formatAddress(addy)}</Text>
+                                </Pressable>
+                            ))}
+                        </View>
+                    )}
+                </View>
+            </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  title: {
-    fontWeight: 'bold',
-    fontSize: 30,
-    color: '#333',
-    marginBottom: 15,
-  },
-  text: {
-    fontSize: 24,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    width: '90%',
-  },
-  
-  inputLabel: {
-    flex: 1,
-    fontWeight: 'bold',
-    fontSize: 15,
-    color: '#444',
-  },
-  
-  inputField: {
-    flex: 2,
-    height: 40,
-    borderColor: '#aaa',
-    borderWidth: 1,
-    paddingHorizontal: 5,
-    borderRadius: 8,
-  },
-  dropdownOption: {
-    padding: 8,
-    backgroundColor: '#eee',
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-    width: '90%',
-    alignSelf: 'center',
-  }
+    screenContainer: { flex: 1 },
+    container: { flex: 1 },
+    content: { alignItems: 'center', paddingVertical: 20, paddingBottom: 100 },
+    title: { fontWeight: 'bold', fontSize: 30, color: '#333', marginBottom: 15 },
+    inputContainer: { width: '90%', marginBottom: 20 },
+    inputLabel: { fontWeight: 'bold', fontSize: 15, color: '#444', marginBottom: 5 },
+    inputField: { height: 40, borderColor: '#aaa', borderWidth: 1, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#fff' },
+    dropdown: { position: 'absolute', left: '5%', width: '90%', backgroundColor: '#fff', borderColor: '#ccc', borderWidth: 1, borderRadius: 10, maxHeight: 250, zIndex: 1000, elevation: 5 },
+    dropdownOption: { paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#eee' },
+    dropdownText: { fontSize: 14, color: '#333' },
+    homeAddressText: { fontWeight: 'bold', color: '#2a5d9f' },
+    separator: { height: 2, backgroundColor: '#000', marginVertical: 5 },
 });

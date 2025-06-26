@@ -78,5 +78,18 @@ class CustomerWithHomeAddressSchema(BaseModel):
     Date_Modified: datetime
     home_address: Optional[AddressSchema]
 
+class CreateRideSchema(BaseModel):
+    CustomerId: int
+    OriginAddress: int
+    DestinationAddress: int
+    PickUpTime: datetime
+    Miles: float
+    EstRideTime: str
+    Price: float
+    PassengerNMBR: Optional[int] = None
+    NeedsCarSeat: bool
+    RideStatus: str
+    DriverId: Optional[int] = None
+
     class Config:
         orm_mode = True

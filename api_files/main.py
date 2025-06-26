@@ -7,7 +7,7 @@ from sqlalchemy.sql import func
 from fastapi import Query
 import os
 from datetime import datetime, timezone
-from schemas import RideSchema, CustomerSchema, AddressSchema, UserSchema, CustomerWithHomeAddressSchema
+from schemas import RideSchema, CustomerSchema, AddressSchema, UserSchema, CustomerWithHomeAddressSchema, CreateRideSchema
 from typing import List, Optional
 
 # Establish connection to db using the url below
@@ -154,3 +154,23 @@ def get_all_addresses(db: Session = Depends(get_db)):
 @app.get("/users", response_model=List[UserSchema])
 def get_all_users(db: Session = Depends(get_db)):
     return db.query(Users).all()
+
+@app.post("/rides")
+def create_ride(ride: CreateRideSchema, db: Session = Depends(get_db)):
+    new_ride = Ride(
+        CustomerId=ride.CustomerId,
+        OriginAddress=ride.OriginAddress,
+        DestinationAddress=ride.DestinationAddress,
+        PickUpTime=ride.PickUpTime,
+        Miles=ride.Miles,
+        EstRideTime=ride.EstRideTime,
+        Price=ride.Price,
+        PassengerNMBR=ride.PassengerNMBR,
+        NeedsCarSeat=ride.NeedsCarSeat,
+        RideStatus=ride.RideStatus,
+        DriverId=ride.DriverId
+    )
+    db.add(new_ride)
+    db.commit()
+    db.refresh(new_ride)
+    return {"message": "Ride created", "RideId": new_ride.RideId}

@@ -12,9 +12,17 @@ export const getCustomers = async (): Promise<Customer[]> => {
     return response.data;
 };
 
-
 // Fetches all addresses in the db from API
 export const getAddresses = async (): Promise<Address[]> => {
     const response = await axios.get(`${API_URL}/addresses`);
     return response.data;
 };
+
+export const createRide = async (ride: Omit<Ride, 'RideId' | 'Date_Created' | 'Date_Modified'>): Promise<any> => {
+    const response = await axios.post(`${API_URL}/rides`, ride, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  };
